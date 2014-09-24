@@ -1,0 +1,146 @@
+#!/bin/bash
+tmp="/data/tmp"
+mkdir -p "$tmp"
+
+SCRIPT_DIR=$(dirname $0)
+
+current_env="$3"
+
+function start {
+    if [ $1 == "all" ]; then
+      start_all
+      return 0
+    fi
+    if [ "$1" == "merchandise-adapter" ]; then
+        folder="adapter"
+        port=9092
+    else
+        folder=$1
+        port=9090
+    fi
+
+    environment=${current_env:-DEV}
+    properties="/data/services/generated-properties/development/merchandise-platform.properties"
+    echo -e "Starting \033[32m$1\033[0m service on port \033[32m$port\033[0m with - $properties "
+    java -Xmx256m -Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=7070 -Dlog4j.configuration=file:/data/services/configurations/log4j.properties -Dport=$port -Dlog_directory=/data/services/logs -Djava.io.tmpdir="$tmp" -Dproject_name=DraftTable -Dconfig_file=file:$properties -classpath /data/services/generated-properties -jar target/DraftTable.jar > "$tmp"/"$1".log&
+    echo "$!" > tmp/"$1".lock
+}
+
+function stop {
+    if [ $1 == "all" ]; then
+      stop_all
+      return 0
+    fi
+    echo "Stopping $1 service..."
+    if [ -f "tmp/$1.lock" ]; then
+        kill `cat "tmp/$1.lock"`
+        rm "tmp/$1.lock"
+    else
+        echo "service is not running"
+    fi
+}
+
+function restart {
+    if [ $1 == "all" ]; then
+      restart_all
+      return 0
+    fi
+    stop $1
+    sleep 1
+    start $1
+}
+
+
+function restart_with_wait {
+
+if [ $1 == "all" ]; then
+  restart_all
+  expected='pong'
+  is_service_started='false'
+
+  end=$((SECONDS+300))
+  while [ $SECONDS -lt $end ];
+  do
+    sleep 1
+    resp=`curl -s "http://localhost:9090/metrics/ping"`
+    echo "Waiting for service to start...."
+    if [ "$resp" == "$expected" ]
+    then
+      is_service_started='true'
+      break
+    fi
+  done
+
+  if [ "$is_service_started" != 'true' ];
+  then
+     echo "Unable to start the service :("
+	 return 1
+  fi
+
+  return 0
+fi
+stop $1
+sleep 1
+start $1
+}
+
+function start_all {
+        start merchandise-platform
+}
+
+function stop_all {
+        stop merchandise-platform
+}
+
+function status_all {
+    RET_ALL=0
+        status merchandise-platform
+        if [ $? -eq 1 ]; then
+          RET_ALL=1
+        fi
+    return $RET_ALL
+}
+
+function restart_all {
+    stop_all
+    start_all
+}
+
+function status {
+    if [ $1 == "all" ]; then
+      status_all
+      return $?
+    fi
+
+    id=`jps | grep $1 | grep -v grep | grep -v bash`
+    RET=$?
+    if [ $RET -eq 0 ]; then
+        echo "$1 service is running"
+    else
+        echo "$1 service is not running"
+    fi
+    return $RET
+}
+
+case "$2" in
+    start)
+        status $1 && exit 0
+        $2 $1
+        ;;
+    stop)
+        $2 $1
+        ;;
+    restart)
+        $2 $1
+        ;;
+    status)
+        $2 $1
+        ;;
+    restart_with_wait)
+        $2 $1
+        ;;
+    *)
+        echo "Usage:
+        service [merchandise-platform|merchandise-adapter|all] [stop|start|restart|status|restart_with_wait] "
+        exit 2
+esac
