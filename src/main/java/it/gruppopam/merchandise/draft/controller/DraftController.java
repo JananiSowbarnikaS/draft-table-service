@@ -1,20 +1,16 @@
 package it.gruppopam.merchandise.draft.controller;
 
-import it.gruppopam.merchandise.draft.repository.DraftRepository;
 import it.gruppopam.merchandise.draft.service.DraftService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Controller;
 import org.springframework.validation.annotation.Validated;
 
-
-import javax.ws.rs.*;
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-
-import static java.util.Collections.sort;
 
 @Path("/drafts")
 @Controller
@@ -32,10 +28,10 @@ public class DraftController {
 
     }
 
-    @Path("/check")
+    @Path("/check.json")
     @GET
-    public Map<String, String> getCheckResult(){
-        Map<String, String > result= new HashMap<>();
+    public Map<String, String> getCheckResult() {
+        Map<String, String> result = new HashMap<>();
         result.put("Name", "Janani");
         return result;
     }

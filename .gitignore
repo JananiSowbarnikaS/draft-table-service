@@ -1,0 +1,21 @@
+.classpath
+*.eml
+*.class
+.DS_Store
+*/.DS_Store
+.idea
+# Package Files #
+*.jar
+*.war
+*.ear
+target/
+logs/
+*.iml
+*.ipr
+*.iws
+cas.log
+perfStats.log
+*.log
+dependency-reduced-pom.xml
+tmp/
+.project
